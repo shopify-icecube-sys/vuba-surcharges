@@ -1,0 +1,29 @@
+query CartTransformRunInput {
+  cart {
+    lines {
+      id
+      quantity
+      cost {
+        amountPerQuantity {
+          amount
+        }
+      }
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+          title
+          product {
+            handle
+            inAnyCollection(ids: ["gid://shopify/Collection/437309407483"])
+          }
+        }
+      }
+    }
+  }
+  shop {
+    metafield(namespace: "vuba_surcharges", key: "fee_variant_id") {
+      value
+    }
+  }
+}

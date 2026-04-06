@@ -1,0 +1,25 @@
+api_version = "2025-10"
+
+[[extensions]]
+name = "t:name"
+handle = "aggregate-fee"
+type = "function"
+uid = "9a50c51e-875c-8b16-a1e6-99e1506b2b1cddbb8e59"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.transform.run"
+  input_query = "src/cart_transform_run.graphql"
+  export = "cart-transform-run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"
+
+  [extensions.ui.paths]
+  create = "/"
+  details = "/"
+
+[[extensions.metafield_access]]
+namespace = "vuba_surcharges"
+key = "fee_variant_id"
