@@ -34,7 +34,7 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
           expandedCartItems: [
             {
               merchandiseId: merchandise.id,
-              quantity: 1,
+              quantity: 1, // Must be original quantity
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -42,16 +42,10 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
                   },
                 },
               },
-              attributes: [
-                {
-                  key: "Surcharge",
-                  value: "5.2% Included"
-                }
-              ]
             },
             {
               merchandiseId: feeVariantId,
-              quantity: 1,
+              quantity: 1, // Must be same quantity to match subtotal
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
