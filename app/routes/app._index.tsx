@@ -144,10 +144,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         );
 
         if (funcNode) {
-          console.log("Enabling Cart Transform:", funcNode.id);
-          const ctRes = await admin.graphql(
+          console.log("Enabling Cart Transform for Function ID:", funcNode.id);
+          const ctRes: any = await admin.graphql(
             `#graphql
-            mutation createCT($functionId: ID!) {
+            mutation createCT($functionId: String!) {
               cartTransformCreate(functionId: $functionId) {
                 cartTransform { id }
                 userErrors { field message }
@@ -155,7 +155,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }`,
             { variables: { functionId: funcNode.id } }
           );
-          console.log("CT Response:", JSON.stringify(await ctRes.json()));
+          const ctJson = await ctRes.json();
+          console.log("CT Response JSON:", JSON.stringify(ctJson));
         }
       }
 
