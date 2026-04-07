@@ -29,6 +29,8 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
       (line as any).parentRelationship?.parent?.merchandise?.__typename === "ProductVariant" &&
       (line as any).parentRelationship.parent.merchandise.product.inAnyCollection;
 
+    const debugValue = `Handle: ${merchandise.product.handle} | InColl: ${isDirectlyTargeted} | Type: ${(merchandise.product as any).productType}`;
+
     if (isDirectlyTargeted || isTargetType || isBundleComponentTargeted) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
@@ -39,7 +41,7 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
           expandedCartItems: [
             {
               merchandiseId: merchandise.id,
-              quantity: 1, // Must be original quantity
+              quantity: 1,
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -47,10 +49,16 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
                   },
                 },
               },
+              attributes: [
+                {
+                  key: "_debug_status",
+                  value: debugValue,
+                },
+              ],
             },
             {
               merchandiseId: feeVariantId,
-              quantity: 1, // Must be same quantity to match subtotal
+              quantity: 1,
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -58,6 +66,12 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
                   },
                 },
               },
+              attributes: [
+                {
+                  key: "_debug_type",
+                  value: (merchandise.product as any).productType || "Missing",
+                },
+              ],
             },
           ],
         },
