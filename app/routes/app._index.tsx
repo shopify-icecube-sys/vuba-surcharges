@@ -157,11 +157,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       console.log("--- Setup Finished! ---");
       return { success: true };
     } catch (err: any) {
-      console.error("CRITICAL SETUP ERROR:", err);
-      // Log more details if it's a GraphQL error
-      if (err.graphQLErrors) {
-        console.error("Detailed GraphQL Errors:", JSON.stringify(err.graphQLErrors));
+      console.error("CRITICAL SETUP ERROR TYPE:", typeof err);
+      console.error("CRITICAL SETUP ERROR MESSAGE:", err.message);
+      
+      if (err.response?.errors) {
+        console.error("Detailed GraphQL Errors (err.response.errors):", JSON.stringify(err.response.errors, null, 2));
       }
+      if (err.graphQLErrors) {
+        console.error("Detailed GraphQL Errors (err.graphQLErrors):", JSON.stringify(err.graphQLErrors, null, 2));
+      }
+      
       return { success: false, error: err.message || "Unknown Error" };
     }
   }
