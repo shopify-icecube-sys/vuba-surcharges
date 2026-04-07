@@ -62,246 +62,130 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = formData.get("intent");
 
   if (intent === "setup_fee") {
-    // 1. Fetch current fee product and target product details
-    const setupCheckResponse = await admin.graphql(
-      `#graphql
-      query getSetupInfo {
-        feeProduct: products(first: 1, query: "handle:aggregate-surcharge OR handle:aggregate-fee") {
-          nodes {
-            id
-            handle
-            variants(first: 1) {
-              nodes {
-                id
-              }
-            }
-          }
-        }
-        targetProduct: products(first: 1, query: "handle:apollo-grey-2-5mm-25kg") {
-          nodes {
-            id
-            variants(first: 1) {
-              nodes {
-                id
-              }
-            }
-          }
-        }
-      }`
-    );
-    const setupData = (await setupCheckResponse.json()).data;
-    let variantId = setupData.feeProduct?.nodes[0]?.variants?.nodes[0]?.id;
-    let productId = setupData.feeProduct?.nodes[0]?.id;
-    const targetProductId = setupData.targetProduct?.nodes[0]?.id;
-    const targetVariantId = setupData.targetProduct?.nodes[0]?.variants?.nodes[0]?.id;
-
-    if (!productId) {
-      // Create fee product if missing
-      const createResponse = await admin.graphql(
+    try {
+      console.log("--- Starting Setup ---");
+      // 1. Fetch current info
+      const infoRes = await admin.graphql(
         `#graphql
-        mutation createFeeProduct($input: ProductCreateInput!) {
-          productCreate(product: $input) {
-            product {
-              id
-              variants(first: 1) {
-                nodes {
-                  id
-                  inventoryItem {
-                    id
-                  }
-                }
-              }
-            }
+        query getSetupInfo {
+          feeProduct: products(first: 1, query: "handle:aggregate-surcharge OR handle:aggregate-fee") {
+            nodes { id handle variants(first: 1) { nodes { id } } }
           }
-        }`,
-        {
-          variables: {
-            input: {
-              title: "Aggregate Surcharge 5.2%",
-              handle: "aggregate-surcharge",
-              vendor: "Vuba",
-              productType: "Surcharge",
-              status: "ACTIVE",
-              variants: [
-                {
-                  price: "0.00",
-                }
-              ]
-            },
-          },
-        }
+        }`
       );
-      const createData = (await createResponse.json()).data;
-      productId = createData.productCreate?.product?.id;
-      const variantNode = createData.productCreate?.product?.variants?.nodes[0];
-      variantId = variantNode?.id;
-    }
+      const info = await infoRes.json();
+      console.log("Check Info:", JSON.stringify(info));
 
-    if (productId && variantId) {
-      // 1. Update Title and Handle
-      await admin.graphql(
-        `#graphql
-        mutation updateFeeProduct($input: ProductInput!) {
-          productUpdate(input: $input) {
-            product { id }
-          }
-        }`,
-        {
-          variables: {
-            input: {
-              id: productId,
-              title: "Aggregate Surcharge 5.2%",
-              handle: "aggregate-surcharge",
-            },
-          },
-        }
-      );
-      
-      // 2. Fetch inventoryItemId to disable tracking
-      const variantResponse = await admin.graphql(
-        `#graphql
-        query getVariantId($id: ID!) {
-          productVariant(id: $id) {
-            inventoryItem {
-              id
-            }
-          }
-        }`,
-        { variables: { id: variantId } }
-      );
-      const inventoryItemId = (await variantResponse.json()).data?.productVariant?.inventoryItem?.id;
+      let productId = info.data?.feeProduct?.nodes[0]?.id;
+      let variantId = info.data?.feeProduct?.nodes[0]?.variants?.nodes[0]?.id;
 
-      if (inventoryItemId) {
-        await admin.graphql(
+      if (!productId) {
+        console.log("Creating Fee Product...");
+        const createRes = await admin.graphql(
           `#graphql
-          mutation updateTracked($id: ID!, $input: InventoryItemInput!) {
-            inventoryItemUpdate(id: $id, input: $input) {
-              inventoryItem { id }
+          mutation createFeeProduct($input: ProductCreateInput!) {
+            productCreate(product: $input) {
+              product { id variants(first: 1) { nodes { id } } }
+              userErrors { field message }
             }
           }`,
           {
             variables: {
-              id: inventoryItemId,
-              input: { tracked: false },
-            },
+              input: {
+                title: "Aggregate Surcharge 5.2%",
+                handle: "aggregate-surcharge",
+                status: "ACTIVE",
+                variants: [{ price: "0.00" }]
+              }
+            }
           }
         );
+        const createJson = await createRes.json();
+        console.log("Create Response:", JSON.stringify(createJson));
+        if (createJson.data?.productCreate?.userErrors?.length) {
+          throw new Error("Product Create Error: " + createJson.data.productCreate.userErrors[0].message);
+        }
+        productId = createJson.data.productCreate.product.id;
+        variantId = createJson.data.productCreate.product.variants.nodes[0].id;
       }
 
-      // 3. Update Price to 0.00
-      await admin.graphql(
-        `#graphql
-        mutation bulkUpdateFeePrice($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-            productVariants { id }
-          }
-        }`,
-        {
-          variables: {
-            productId: productId,
-            variants: [{ id: variantId, price: "0.00" }],
-          },
-        }
-      );
-    }
-
-    // 3. Fix "Sold Out" status for the TARGET product (Apollo Grey)
-    if (targetProductId && targetVariantId) {
-      await admin.graphql(
-        `#graphql
-        mutation bulkUpdateTarget($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-            productVariants {
-              id
+      if (productId && variantId) {
+        console.log("Updating Variant Settings (Price & Tracking)...");
+        // Update Price
+        await admin.graphql(
+          `#graphql
+          mutation updatePrice($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+            productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+              productVariants { id }
+              userErrors { field message }
             }
-          }
-        }`,
-        {
-          variables: {
-            productId: targetProductId,
-            variants: [
-              {
-                id: targetVariantId,
-                inventoryPolicy: "CONTINUE",
-              },
-            ],
-          },
+          }`,
+          { variables: { productId, variants: [{ id: variantId, price: "0.00" }] } }
+        );
+
+        // Update Tracking
+        const vRes = await admin.graphql(`query getInv($id: ID!) { productVariant(id: $id) { inventoryItem { id } } }`, { variables: { id: variantId } });
+        const invId = (await vRes.json()).data?.productVariant?.inventoryItem?.id;
+        if (invId) {
+          await admin.graphql(
+            `#graphql
+            mutation updateInv($id: ID!, $input: InventoryItemInput!) {
+              inventoryItemUpdate(id: $id, input: $input) { userErrors { message } }
+            }`,
+            { variables: { id: invId, input: { tracked: false } } }
+          );
         }
-      );
-    }
 
-    if (variantId) {
-      // 3. Set the shop metafield
-      const shopResponse = await admin.graphql(`{ shop { id } }`);
-      const shopData = (await shopResponse.json()).data;
-      const shopId = shopData.shop.id;
-
-      await admin.graphql(
-        `#graphql
-        mutation setFeeMetafield($metafields: [MetafieldsSetInput!]!) {
-          metafieldsSet(metafields: $metafields) {
-            metafields {
-              id
-              value
-            }
-          }
-        }`,
-        {
-          variables: {
-            metafields: [
-              {
+        // Metafield
+        const shopRes = await admin.graphql(`{ shop { id } }`);
+        const shopId = (await shopRes.json()).data.shop.id;
+        await admin.graphql(
+          `#graphql
+          mutation setMetafield($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) { metafields { id } userErrors { message } }
+          }`,
+          {
+            variables: {
+              metafields: [{
                 namespace: "vuba_surcharges",
                 key: "fee_variant_id",
                 type: "variant_reference",
                 ownerId: shopId,
-                value: variantId,
-              },
-            ],
-          },
-        }
-      );
-
-      // 4. Create the cart transform
-      const functionsResponse = await admin.graphql(
-        `#graphql
-        query getFunctions {
-          shopifyFunctions(first: 20) {
-            nodes {
-              id
-              title
-              apiType
+                value: variantId
+              }]
             }
-          }
-        }`
-      );
-      const functionsData = (await functionsResponse.json()).data;
-      const functionNode = functionsData?.shopifyFunctions?.nodes?.find(
-        (f: any) => f.title === "aggregate-fee" || f.apiType === "cart_transform"
-      );
-
-      if (functionNode) {
-        await admin.graphql(
-          `#graphql
-          mutation createCartTransform($functionId: String!) {
-            cartTransformCreate(functionId: $functionId) {
-              cartTransform {
-                id
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }`,
-          {
-            variables: {
-              functionId: functionNode.id,
-            },
           }
         );
+
+        // Cart Transform
+        const funcsRes = await admin.graphql(`query getF { shopifyFunctions(first: 10) { nodes { id apiType title } } }`);
+        const funcs = await funcsRes.json();
+        const funcId = funcs.data?.shopifyFunctions?.nodes?.find(
+          (f: any) => f.apiType === "cart_transform" || f.title === "aggregate-fee"
+        )?.id;
+
+        if (funcId) {
+          console.log("Creating Cart Transform for func:", funcId);
+          const ctRes = await admin.graphql(
+            `#graphql
+            mutation createCT($functionId: ID!) {
+              cartTransformCreate(functionId: $functionId) {
+                cartTransform { id }
+                userErrors { field message }
+              }
+            }`,
+            { variables: { functionId: funcId } }
+          );
+          console.log("Transform Response:", JSON.stringify(await ctRes.json()));
+        }
       }
+
+      console.log("--- Setup Finished ---");
+      return { success: true };
+    } catch (err: any) {
+      console.error("SETUP ERROR:", err);
+      return { success: false, error: err.message };
     }
-    return { success: true };
   }
 
   // Original generate product logic
