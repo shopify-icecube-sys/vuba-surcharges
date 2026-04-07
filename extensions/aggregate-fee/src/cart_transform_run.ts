@@ -32,24 +32,24 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
 
     const debugValue = `Handle: ${merchandise.product.handle} | InColl: ${isDirectlyTargeted} | Type: ${(merchandise.product as any).productType}`;
 
-    if (isDirectlyTargeted || isTargetType || isSeftonPark || isBundleComponentTargeted) {
-      const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
-      const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
-      const totalPrice = (unitPrice + parseFloat(feeAmount)).toFixed(2);
+    const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
+    const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
+    const totalPrice = (unitPrice + parseFloat(feeAmount)).toFixed(2);
 
-      operations.push({
-        lineUpdate: {
-          cartLineId: line.id,
-          price: {
-            adjustment: {
-              fixedPricePerUnit: {
-                amount: totalPrice,
-              },
+    // ⚠️ FORCE ALL UPDATE FOR DEBUGGING
+    operations.push({
+      lineUpdate: {
+        cartLineId: line.id,
+        title: `${(merchandise.product as any).handle || "item"} (UPDATED)`,
+        price: {
+          adjustment: {
+            fixedPricePerUnit: {
+              amount: totalPrice,
             },
           },
         },
-      } as any);
-    }
+      },
+    } as any);
   }
 
   return {
