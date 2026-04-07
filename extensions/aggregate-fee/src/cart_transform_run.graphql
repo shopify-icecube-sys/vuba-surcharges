@@ -15,7 +15,11 @@ query CartTransformRunInput {
           title
           product {
             handle
-            inAnyCollection(ids: ["gid://shopify/Collection/446838440227", "gid://shopify/Collection/701490528643"])
+            collections(first: 50) {
+              nodes {
+                id
+              }
+            }
           }
         }
       }
@@ -25,7 +29,11 @@ query CartTransformRunInput {
             __typename
             ... on ProductVariant {
               product {
-                inAnyCollection(ids: ["gid://shopify/Collection/446838440227", "gid://shopify/Collection/701490528643"])
+                collections(first: 50) {
+                  nodes {
+                    id
+                  }
+                }
               }
             }
           }

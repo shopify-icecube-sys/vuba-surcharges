@@ -23,13 +23,23 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     const merchandise = line.merchandise;
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // Check if the product itself is in the collection OR if its bundle parent is in the collection
-    const isDirectlyTargeted = merchandise.product.inAnyCollection;
-    const isBundleComponentTargeted =
-      (line as any).parentRelationship?.parent?.merchandise?.__typename === "ProductVariant" &&
-      (line as any).parentRelationship.parent.merchandise.product.inAnyCollection;
+    const targetCollectionIds = [
+      "gid://shopify/Collection/446838440227",
+      "gid://shopify/Collection/701490528643",
+    ];
 
-    if (isDirectlyTargeted || isBundleComponentTargeted) {
+    // ✅ New Check: Loop through all product collections (Direct)
+    const isDirectlyTargeted = (merchandise.product as any).collections.nodes.some((c: any) =>
+      targetCollectionIds.includes(c.id)
+    );
+
+    // ✅ New Check: Loop through all parent bundle collections (Indirect)
+    const isBundleComponent = (line as any).parentRelationship?.parent?.merchandise?.__typename === "ProductVariant" &&
+      ((line as any).parentRelationship.parent.merchandise.product.collections as any).nodes.some((c: any) =>
+        targetCollectionIds.includes(c.id)
+      );
+
+    if (isDirectlyTargeted || isBundleComponent) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
