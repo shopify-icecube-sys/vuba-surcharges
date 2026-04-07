@@ -35,48 +35,20 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     if (isDirectlyTargeted || isTargetType || isSeftonPark || isBundleComponentTargeted) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
+      const totalPrice = (unitPrice + parseFloat(feeAmount)).toFixed(2);
 
       operations.push({
-        lineExpand: {
+        lineUpdate: {
           cartLineId: line.id,
-          expandedCartItems: [
-            {
-              merchandiseId: merchandise.id,
-              quantity: 1,
-              price: {
-                adjustment: {
-                  fixedPricePerUnit: {
-                    amount: unitPrice.toFixed(2),
-                  },
-                },
+          price: {
+            adjustment: {
+              fixedPricePerUnit: {
+                amount: totalPrice,
               },
-              attributes: [
-                {
-                  key: "_debug_status",
-                  value: debugValue,
-                },
-              ],
             },
-            {
-              merchandiseId: feeVariantId,
-              quantity: 1,
-              price: {
-                adjustment: {
-                  fixedPricePerUnit: {
-                    amount: feeAmount,
-                  },
-                },
-              },
-              attributes: [
-                {
-                  key: "_debug_type",
-                  value: (merchandise.product as any).productType || "Missing",
-                },
-              ],
-            },
-          ],
+          },
         },
-      });
+      } as any);
     }
   }
 
