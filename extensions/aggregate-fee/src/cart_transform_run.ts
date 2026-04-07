@@ -5,20 +5,16 @@ import {
 
 const FEE_PERCENTAGE = 0.052;
 
-export const run = (input: CartTransformRunInput): CartTransformRunResult => {
+export function cartTransformRun(input: CartTransformRunInput): CartTransformRunResult {
   const operations: any[] = [];
 
   for (const line of input.cart.lines) {
     const merchandise = line.merchandise;
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // Direct Collection check
+    // Checks
     const isDirectlyTargeted = merchandise.product.inAnyCollection;
-
-    // Sefton Park Variant ID check
     const isSeftonPark = merchandise.id === "gid://shopify/ProductVariant/57554789990787";
-
-    // Bundle Parent check (Checks if parent is in collection or is Sefton Park)
     const parent = (line as any).parentRelationship?.parent?.merchandise;
     const isBundleComponent = 
       parent?.product?.inAnyCollection ||
@@ -45,6 +41,6 @@ export const run = (input: CartTransformRunInput): CartTransformRunResult => {
   }
 
   return {
-    operations: operations,
+    operations,
   };
-};
+}
