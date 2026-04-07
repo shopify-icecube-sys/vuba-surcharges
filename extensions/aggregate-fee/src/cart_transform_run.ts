@@ -25,13 +25,14 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
 
     const isDirectlyTargeted = merchandise.product.inAnyCollection;
     const isTargetType = (merchandise.product as any).productType === "Resin Bound Kit";
+    const isSeftonPark = merchandise.id === "gid://shopify/ProductVariant/57554789990787";
     const isBundleComponentTargeted =
       (line as any).parentRelationship?.parent?.merchandise?.__typename === "ProductVariant" &&
       (line as any).parentRelationship.parent.merchandise.product.inAnyCollection;
 
     const debugValue = `Handle: ${merchandise.product.handle} | InColl: ${isDirectlyTargeted} | Type: ${(merchandise.product as any).productType}`;
 
-    if (isDirectlyTargeted || isTargetType || isBundleComponentTargeted) {
+    if (isDirectlyTargeted || isTargetType || isSeftonPark || isBundleComponentTargeted) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
