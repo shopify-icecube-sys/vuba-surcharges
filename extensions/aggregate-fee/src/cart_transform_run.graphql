@@ -19,6 +19,18 @@ query CartTransformRunInput {
           }
         }
       }
+      parentRelationship {
+        parent {
+          merchandise {
+            __typename
+            ... on ProductVariant {
+              product {
+                inAnyCollection(ids: ["gid://shopify/Collection/446838440227", "gid://shopify/Collection/701490528643"])
+              }
+            }
+          }
+        }
+      }
     }
   }
   shop {
