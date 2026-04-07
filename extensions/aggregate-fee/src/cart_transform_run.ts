@@ -24,8 +24,11 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     if (merchandise.__typename !== "ProductVariant") continue;
 
     // Apply surcharge if the product is in the specified collection
-    if (merchandise.product.inAnyCollection) {
+    const isTargetCollection = merchandise.product.inAnyCollection;
+    const isTargetVariant = merchandise.id === "gid://shopify/ProductVariant/57554789990787";
+    if (isTargetCollection || isTargetVariant) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
+      // Logic wahi rahega: 5.2% calculate hoga bundle ki current price par
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
       operations.push({
