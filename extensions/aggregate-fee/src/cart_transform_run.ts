@@ -23,8 +23,13 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     const merchandise = line.merchandise;
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // Apply surcharge if the product is in the specified collection
-    if (merchandise.product.inAnyCollection) {
+    // Check if the product itself is in the collection OR if its bundle parent is in the collection
+    const isDirectlyTargeted = merchandise.product.inAnyCollection;
+    const isBundleComponentTargeted =
+      (line as any).parentRelationship?.parent?.merchandise?.__typename === "ProductVariant" &&
+      (line as any).parentRelationship.parent.merchandise.product.inAnyCollection;
+
+    if (isDirectlyTargeted || isBundleComponentTargeted) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
