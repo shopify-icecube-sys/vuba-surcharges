@@ -32,7 +32,8 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
 
     const debugValue = `Handle: ${merchandise.product.handle} | InColl: ${isDirectlyTargeted} | Type: ${(merchandise.product as any).productType}`;
 
-    if (isDirectlyTargeted || isTargetType || isSeftonPark || isBundleComponentTargeted) {
+    // ⚠️ TEMPORARY FORCE TEST: Target everything to see if function runs
+    if (true) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
