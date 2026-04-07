@@ -64,23 +64,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "setup_fee") {
     try {
       console.log("--- Starting Setup ---");
-      // 1. Fetch current info
-      const infoRes = await admin.graphql(
-        `#graphql
-        query getSetupInfo {
-          feeProduct: products(first: 1, query: "handle:aggregate-surcharge OR handle:aggregate-fee") {
-            nodes { id handle variants(first: 1) { nodes { id } } }
-          }
-        }`
-      );
+      const infoRes = await admin.graphql(`query getSetupInfo { feeProduct: products(first: 1, query: "handle:aggregate-surcharge") { nodes { id variants(first: 1) { nodes { id } } } } }`);
       const info = await infoRes.json();
-      console.log("Check Info:", JSON.stringify(info));
-
+      
       let productId = info.data?.feeProduct?.nodes[0]?.id;
       let variantId = info.data?.feeProduct?.nodes[0]?.variants?.nodes[0]?.id;
 
       if (!productId) {
-        console.log("Creating Fee Product...");
+        console.log("Attempting to Create Fee Product...");
         const createRes = await admin.graphql(
           `#graphql
           mutation createFeeProduct($input: ProductCreateInput!) {
@@ -100,49 +91,33 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
           }
         );
-        const createJson = await createRes.json();
-        console.log("Create Response:", JSON.stringify(createJson));
+        const createJson: any = await createRes.json();
+        console.log("Create Response JSON:", JSON.stringify(createJson));
+        
+        if (createJson.errors) {
+          console.error("GraphQL Errors detected:", JSON.stringify(createJson.errors));
+          throw new Error("GraphQL Error: " + createJson.errors[0].message);
+        }
+
         if (createJson.data?.productCreate?.userErrors?.length) {
-          throw new Error("Product Create Error: " + createJson.data.productCreate.userErrors[0].message);
+          const uErr = createJson.data.productCreate.userErrors[0].message;
+          console.error("User Errors detected:", uErr);
+          throw new Error("Product Create Error: " + uErr);
         }
         productId = createJson.data.productCreate.product.id;
         variantId = createJson.data.productCreate.product.variants.nodes[0].id;
       }
 
       if (productId && variantId) {
-        console.log("Updating Variant Settings (Price & Tracking)...");
-        // Update Price
-        await admin.graphql(
-          `#graphql
-          mutation updatePrice($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-            productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-              productVariants { id }
-              userErrors { field message }
-            }
-          }`,
-          { variables: { productId, variants: [{ id: variantId, price: "0.00" }] } }
-        );
-
-        // Update Tracking
-        const vRes = await admin.graphql(`query getInv($id: ID!) { productVariant(id: $id) { inventoryItem { id } } }`, { variables: { id: variantId } });
-        const invId = (await vRes.json()).data?.productVariant?.inventoryItem?.id;
-        if (invId) {
-          await admin.graphql(
-            `#graphql
-            mutation updateInv($id: ID!, $input: InventoryItemInput!) {
-              inventoryItemUpdate(id: $id, input: $input) { userErrors { message } }
-            }`,
-            { variables: { id: invId, input: { tracked: false } } }
-          );
-        }
-
-        // Metafield
+        console.log("Updating Metadata & Transform...");
         const shopRes = await admin.graphql(`{ shop { id } }`);
-        const shopId = (await shopRes.json()).data.shop.id;
+        const shopData = await shopRes.json();
+        const shopId = shopData.data.shop.id;
+
         await admin.graphql(
           `#graphql
           mutation setMetafield($metafields: [MetafieldsSetInput!]!) {
-            metafieldsSet(metafields: $metafields) { metafields { id } userErrors { message } }
+            metafieldsSet(metafields: $metafields) { metafields { id } }
           }`,
           {
             variables: {
@@ -157,15 +132,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           }
         );
 
-        // Cart Transform
-        const funcsRes = await admin.graphql(`query getF { shopifyFunctions(first: 10) { nodes { id apiType title } } }`);
+        const funcsRes = await admin.graphql(`query getFunctions { shopifyFunctions(first: 10) { nodes { id title apiType } } }`);
         const funcs = await funcsRes.json();
-        const funcId = funcs.data?.shopifyFunctions?.nodes?.find(
+        const funcNode = funcs.data?.shopifyFunctions?.nodes?.find(
           (f: any) => f.apiType === "cart_transform" || f.title === "aggregate-fee"
-        )?.id;
+        );
 
-        if (funcId) {
-          console.log("Creating Cart Transform for func:", funcId);
+        if (funcNode) {
+          console.log("Enabling Cart Transform:", funcNode.id);
           const ctRes = await admin.graphql(
             `#graphql
             mutation createCT($functionId: ID!) {
@@ -174,17 +148,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 userErrors { field message }
               }
             }`,
-            { variables: { functionId: funcId } }
+            { variables: { functionId: funcNode.id } }
           );
-          console.log("Transform Response:", JSON.stringify(await ctRes.json()));
+          console.log("CT Response:", JSON.stringify(await ctRes.json()));
         }
       }
 
-      console.log("--- Setup Finished ---");
+      console.log("--- Setup Finished! ---");
       return { success: true };
     } catch (err: any) {
-      console.error("SETUP ERROR:", err);
-      return { success: false, error: err.message };
+      console.error("CRITICAL SETUP ERROR:", err);
+      // Log more details if it's a GraphQL error
+      if (err.graphQLErrors) {
+        console.error("Detailed GraphQL Errors:", JSON.stringify(err.graphQLErrors));
+      }
+      return { success: false, error: err.message || "Unknown Error" };
     }
   }
 
