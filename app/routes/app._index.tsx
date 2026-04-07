@@ -233,11 +233,11 @@ export default function Index() {
             )}
             {targetProduct ? (
               <s-paragraph>
-                Target Collections: <b style={{ color: "green" }}>Active (IDs: 446838440227, 701490528643)</b>
+                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227)</b>
               </s-paragraph>
             ) : (
               <s-paragraph>
-                Target Collections: <b style={{ color: "green" }}>Active (IDs: 446838440227, 701490528643)</b>
+                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227)</b>
               </s-paragraph>
             )}
             <s-paragraph>
