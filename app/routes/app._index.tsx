@@ -360,11 +360,11 @@ export default function Index() {
             )}
             {targetProduct ? (
               <s-paragraph>
-                Target Collection: <b style={{ color: "green" }}>Active (ID: 437309407483)</b>
+                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227)</b>
               </s-paragraph>
             ) : (
               <s-paragraph>
-                Target Collection: <b style={{ color: "green" }}>Active (ID: 437309407483)</b>
+                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227)</b>
               </s-paragraph>
             )}
             <s-paragraph>
@@ -390,7 +390,7 @@ export default function Index() {
 
       <s-section heading="How it works">
         <s-paragraph>
-          This app applies a <b>5.2% surcharge</b> to all products assigned to the collection <code>437309407483</code>.
+          This app applies a <b>5.2% surcharge</b> to all products assigned to the collection <code>446838440227</code>.
         </s-paragraph>
         <s-paragraph>
           1. The app manages a hidden <b>Aggregate Surcharge 5.2%</b> product.<br />
