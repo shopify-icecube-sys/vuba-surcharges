@@ -24,11 +24,12 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     if (merchandise.__typename !== "ProductVariant") continue;
 
     const isDirectlyTargeted = merchandise.product.inAnyCollection;
+    const isTargetType = (merchandise.product as any).productType === "Resin Bound Kit";
     const isBundleComponentTargeted =
       (line as any).parentRelationship?.parent?.merchandise?.__typename === "ProductVariant" &&
       (line as any).parentRelationship.parent.merchandise.product.inAnyCollection;
 
-    if (isDirectlyTargeted || isBundleComponentTargeted) {
+    if (isDirectlyTargeted || isTargetType || isBundleComponentTargeted) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 

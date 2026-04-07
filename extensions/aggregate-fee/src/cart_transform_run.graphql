@@ -15,6 +15,7 @@ query CartTransformRunInput {
           title
           product {
             handle
+            productType
             inAnyCollection(ids: ["gid://shopify/Collection/446838440227", "gid://shopify/Collection/701490528643"])
           }
         }
