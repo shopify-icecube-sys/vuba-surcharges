@@ -71,12 +71,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       let variantId = info.data?.feeProduct?.nodes[0]?.variants?.nodes[0]?.id;
 
       if (!productId) {
-        console.log("Attempting to Create Fee Product...");
+        console.log("Attempting to Create Fee Product (New API Structure)...");
         const createRes = await admin.graphql(
           `#graphql
           mutation createFeeProduct($input: ProductCreateInput!) {
             productCreate(product: $input) {
-              product { id variants(first: 1) { nodes { id } } }
+              product { 
+                id 
+                variants(first: 1) { 
+                  nodes { id } 
+                } 
+              }
               userErrors { field message }
             }
           }`,
@@ -85,8 +90,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               input: {
                 title: "Aggregate Surcharge 5.2%",
                 handle: "aggregate-surcharge",
-                status: "ACTIVE",
-                variants: [{ price: "0.00" }]
+                status: "ACTIVE"
               }
             }
           }
@@ -106,6 +110,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
         productId = createJson.data.productCreate.product.id;
         variantId = createJson.data.productCreate.product.variants.nodes[0].id;
+        console.log("Product Created! ID:", productId, "Variant ID:", variantId);
       }
 
       if (productId && variantId) {
