@@ -12,15 +12,13 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     const merchandise = line.merchandise;
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // Checks
-    const isDirectlyTargeted = merchandise.product.inAnyCollection;
-    const isSeftonPark = merchandise.id === "gid://shopify/ProductVariant/57554789990787";
-    const parent = (line as any).parentRelationship?.parent?.merchandise;
-    const isBundleComponent = 
-      parent?.product?.inAnyCollection ||
-      parent?.id === "gid://shopify/ProductVariant/57554789990787";
+    const productHandle = (merchandise.product as any).handle;
 
-    if (isDirectlyTargeted || isSeftonPark || isBundleComponent) {
+    // Targeting by Handle is much more reliable than GIDs
+    const isSeftonPark = productHandle === "sefton-park-1";
+    const isDirectlyTargeted = merchandise.product.inAnyCollection;
+
+    if (isDirectlyTargeted || isSeftonPark) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
       const totalPrice = (unitPrice + parseFloat(feeAmount)).toFixed(2);
@@ -28,6 +26,8 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
       operations.push({
         lineUpdate: {
           cartLineId: line.id,
+          // Update title temporarily to confirm targeting is working
+          title: isSeftonPark ? `Sefton Park (Surcharge Included)` : undefined,
           price: {
             adjustment: {
               fixedPricePerUnit: {
