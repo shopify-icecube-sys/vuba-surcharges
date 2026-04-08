@@ -16,16 +16,14 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
 
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // ✅ Detect fee product
+    // ✅ Fee product detect
     if (merchandise.id === "gid://shopify/ProductVariant/57708706627971") {
 
-      const feeProp = line.attributes?.find(
-        (attr: any) => attr.key === "_fee_amount"
-      );
+      const feeAmountStr = (line as any).fee?.value;
 
-      if (!feeProp) continue;
+      if (!feeAmountStr) continue;
 
-      const feeAmount = parseFloat(feeProp.value);
+      const feeAmount = parseFloat(feeAmountStr);
 
       operations.push({
         lineUpdate: {

@@ -3,15 +3,17 @@ query CartTransformRunInput {
     lines {
       id
       quantity
-      attributes {
-        key
+
+      fee: attribute(key: "_fee_amount") {
         value
       }
+
       cost {
         amountPerQuantity {
           amount
         }
       }
+
       merchandise {
         __typename
         ... on ProductVariant {
