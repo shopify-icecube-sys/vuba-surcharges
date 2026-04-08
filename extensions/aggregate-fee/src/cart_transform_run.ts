@@ -11,7 +11,7 @@ const NO_CHANGES: CartTransformRunResult = {
 export function cartTransformRun(
   input: CartTransformRunInput
 ): CartTransformRunResult {
-  const FEE_PERCENTAGE = 0.052; // 5.2%
+  const FEE_PERCENTAGE = 0.052;
 
   const operations: Operation[] = [];
 
@@ -20,15 +20,17 @@ export function cartTransformRun(
 
     if (merchandise.__typename !== "ProductVariant") continue;
 
+    const unitPrice = parseFloat(
+      line.cost.amountPerQuantity.amount
+    );
+
+    // ✅ Apply surcharge on:
+    // 1. Collection products
+    // 2. Bundle parent (IMPORTANT)
     if (
       merchandise.product.inAnyCollection ||
       merchandise.id === "gid://shopify/ProductVariant/57554789990787"
     ) {
-      const unitPrice = parseFloat(
-        line.cost.amountPerQuantity.amount
-      );
-
-      // ✅ Calculate increased price
       const newPrice = (unitPrice * (1 + FEE_PERCENTAGE)).toFixed(2);
 
       operations.push({
