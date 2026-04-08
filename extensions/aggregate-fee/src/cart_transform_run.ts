@@ -8,26 +8,24 @@ const NO_CHANGES: CartTransformRunResult = {
   operations: [],
 };
 
-export function cartTransformRun(
-  input: CartTransformRunInput
-): CartTransformRunResult {
-  const FEE_PERCENTAGE = 0.052;
+export function cartTransformRun(input: CartTransformRunInput): CartTransformRunResult {
+  const FEE_PERCENTAGE = 0.052; // 5.2%
 
-  const feeVariantId = "gid://shopify/ProductVariant/15874257551747";
+  const feeVariantId = input.shop?.metafield?.value;
+
+  if (!feeVariantId) {
+    return NO_CHANGES;
+  }
 
   const operations: Operation[] = [];
 
   for (const line of input.cart.lines) {
     const merchandise = line.merchandise;
-
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // ✅ Bundle detect
-    if (merchandise.id === "gid://shopify/ProductVariant/57554789990787") {
-      const unitPrice = parseFloat(
-        line.cost.amountPerQuantity.amount
-      );
-
+    // Apply surcharge if the product is in the specified collection
+    if (merchandise.product.inAnyCollection) {
+      const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
       operations.push({
@@ -35,9 +33,8 @@ export function cartTransformRun(
           cartLineId: line.id,
           expandedCartItems: [
             {
-              // Original bundle
               merchandiseId: merchandise.id,
-              quantity: line.quantity,
+              quantity: 1, // Must be original quantity
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -47,9 +44,8 @@ export function cartTransformRun(
               },
             },
             {
-              // 🔥 Surcharge product
               merchandiseId: feeVariantId,
-              quantity: line.quantity,
+              quantity: 1, // Must be same quantity to match subtotal
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -64,5 +60,7 @@ export function cartTransformRun(
     }
   }
 
-  return { operations };
+  return {
+    operations,
+  };
 }
