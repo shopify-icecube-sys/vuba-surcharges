@@ -13,8 +13,7 @@ export function cartTransformRun(
 ): CartTransformRunResult {
   const FEE_PERCENTAGE = 0.052;
 
-  // ✅ Correct Variant ID
-  const feeVariantId = "gid://shopify/ProductVariant/57708706627971";
+  const feeVariantId = "gid://shopify/ProductVariant/15874257551747";
 
   const operations: Operation[] = [];
 
@@ -23,7 +22,7 @@ export function cartTransformRun(
 
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // ✅ Detect Bundle Variant
+    // ✅ Bundle detect
     if (merchandise.id === "gid://shopify/ProductVariant/57554789990787") {
       const unitPrice = parseFloat(
         line.cost.amountPerQuantity.amount
