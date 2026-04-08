@@ -24,7 +24,9 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     if (merchandise.__typename !== "ProductVariant") continue;
 
     // Apply surcharge if the product is in the specified collection
-    if (merchandise.product.inAnyCollection) {
+    const TARGET_BUNDLE_ID = "gid://shopify/ProductVariant/57554789990787";
+    // Apply surcharge if in collection OR if it's the specific bundle variant
+    if (merchandise.product.inAnyCollection || merchandise.id === TARGET_BUNDLE_ID) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
