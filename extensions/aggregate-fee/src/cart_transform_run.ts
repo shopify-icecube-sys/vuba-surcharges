@@ -8,24 +8,27 @@ const NO_CHANGES: CartTransformRunResult = {
   operations: [],
 };
 
-export function cartTransformRun(input: CartTransformRunInput): CartTransformRunResult {
-  const FEE_PERCENTAGE = 0.052; // 5.2%
+export function cartTransformRun(
+  input: CartTransformRunInput
+): CartTransformRunResult {
+  const FEE_PERCENTAGE = 0.052;
 
-  const feeVariantId = input.shop?.metafield?.value;
-
-  if (!feeVariantId) {
-    return NO_CHANGES;
-  }
+  // ✅ Correct Variant ID
+  const feeVariantId = "gid://shopify/ProductVariant/57708706627971";
 
   const operations: Operation[] = [];
 
   for (const line of input.cart.lines) {
     const merchandise = line.merchandise;
+
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // Apply surcharge if the product is in the specified collection
-    if (merchandise.product.inAnyCollection) {
-      const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
+    // ✅ Detect Bundle Variant
+    if (merchandise.id === "gid://shopify/ProductVariant/57554789990787") {
+      const unitPrice = parseFloat(
+        line.cost.amountPerQuantity.amount
+      );
+
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
       operations.push({
@@ -33,8 +36,9 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
           cartLineId: line.id,
           expandedCartItems: [
             {
+              // Original bundle
               merchandiseId: merchandise.id,
-              quantity: 1, // Must be original quantity
+              quantity: line.quantity,
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -44,8 +48,9 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
               },
             },
             {
+              // 🔥 Surcharge product
               merchandiseId: feeVariantId,
-              quantity: 1, // Must be same quantity to match subtotal
+              quantity: line.quantity,
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -60,7 +65,5 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     }
   }
 
-  return {
-    operations,
-  };
+  return { operations };
 }
