@@ -9,36 +9,58 @@ const NO_CHANGES: CartTransformRunResult = {
 };
 
 export function cartTransformRun(input: CartTransformRunInput): CartTransformRunResult {
+  const FEE_PERCENTAGE = 0.052; // 5.2%
+
+  const feeVariantId = input.shop?.metafield?.value;
+
+  if (!feeVariantId) {
+    return NO_CHANGES;
+  }
+
   const operations: Operation[] = [];
 
   for (const line of input.cart.lines) {
     const merchandise = line.merchandise;
-
     if (merchandise.__typename !== "ProductVariant") continue;
 
-    // ✅ Fee product detect
-    if (merchandise.id === "gid://shopify/ProductVariant/57708706627971") {
-
-      const feeAmountStr = (line as any).fee?.value;
-
-      if (!feeAmountStr) continue;
-
-      const feeAmount = parseFloat(feeAmountStr);
+    // Apply surcharge if the product is in the specified collection
+    if (merchandise.product.inAnyCollection) {
+      const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
+      const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
       operations.push({
-        lineUpdate: {
+        lineExpand: {
           cartLineId: line.id,
-          price: {
-            adjustment: {
-              fixedPricePerUnit: {
-                amount: feeAmount.toFixed(2),
+          expandedCartItems: [
+            {
+              merchandiseId: merchandise.id,
+              quantity: 1, // Must be original quantity
+              price: {
+                adjustment: {
+                  fixedPricePerUnit: {
+                    amount: unitPrice.toFixed(2),
+                  },
+                },
               },
             },
-          },
+            {
+              merchandiseId: feeVariantId,
+              quantity: 1, // Must be same quantity to match subtotal
+              price: {
+                adjustment: {
+                  fixedPricePerUnit: {
+                    amount: feeAmount,
+                  },
+                },
+              },
+            },
+          ],
         },
       });
     }
   }
 
-  return { operations };
+  return {
+    operations,
+  };
 }
