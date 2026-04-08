@@ -3,6 +3,10 @@ query CartTransformRunInput {
     lines {
       id
       quantity
+      attributes {
+        key
+        value
+      }
       cost {
         amountPerQuantity {
           amount
