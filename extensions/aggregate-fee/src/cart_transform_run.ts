@@ -57,6 +57,27 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
           ],
         },
       });
+    } else if (merchandise.product.bundleSurcharge?.value) {
+      const variantIdRaw = merchandise.product.bundleSurcharge.value;
+      const validSurchargeGid = variantIdRaw.includes("gid://")
+        ? variantIdRaw
+        : `gid://shopify/ProductVariant/${variantIdRaw}`;
+
+      operations.push({
+        lineExpand: {
+          cartLineId: line.id,
+          expandedCartItems: [
+            {
+              merchandiseId: merchandise.id,
+              quantity: 1,
+            },
+            {
+              merchandiseId: validSurchargeGid,
+              quantity: 1,
+            },
+          ],
+        },
+      });
     }
   }
 
