@@ -26,7 +26,7 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     const product = merchandise.product;
 
     const isCollectionProduct = product.inAnyCollection;
-    const bundleSurchargeId = merchandise.metafield?.value;
+    const bundleSurchargeId = (merchandise as any).metafield?.value;
 
     // 🟢 EXISTING COLLECTION LOGIC (unchanged)
     if (isCollectionProduct) {
