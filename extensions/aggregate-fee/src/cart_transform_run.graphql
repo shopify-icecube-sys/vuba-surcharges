@@ -16,9 +16,6 @@ query CartTransformRunInput {
           product {
             handle
             inAnyCollection(ids: ["gid://shopify/Collection/446838440227"])
-            bundleSurcharge: metafield(namespace: "custom", key: "surcharge_variant") {
-              value
-            }
           }
         }
       }
