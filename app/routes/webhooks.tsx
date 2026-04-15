@@ -4,12 +4,17 @@ import { authenticate } from "../shopify.server";
 export const action = async ({ request }: ActionFunctionArgs) => {
     const { topic, admin, payload } = await authenticate.webhook(request);
 
+    console.log("=== WEBHOOK RECEIVED ===");
+    console.log("Topic:", topic);
+    console.log("Admin available:", !!admin);
+
     if (!admin) {
+        console.log("No admin API client — skipping.");
         return new Response();
     }
 
     // Sirf draft order create aur update ke time process run hoga
-    if (topic === "draft_orders/create" || topic === "draft_orders/update") {
+    if (topic === "DRAFT_ORDERS_CREATE" || topic === "DRAFT_ORDERS_UPDATE") {
         try {
             const draftOrder = payload;
 
@@ -19,7 +24,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 .map((item: any) => `gid://shopify/Product/${item.product_id}`);
 
             // Agar sirf manual items hain aur koi product nahi hai to process rok denge
-            if (productIds.length === 0) return new Response("OK", { status: 200 });
+            console.log("Product IDs found:", productIds);
+            if (productIds.length === 0) {
+                console.log("No product IDs found — skipping.");
+                return new Response("OK", { status: 200 });
+            }
 
             // 2. GraphQL ke zariye eksath unsab products ke Surcharge Metafield nikalna
             const getMetafieldsQuery = `#graphql
@@ -40,6 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             });
 
             const metafieldsData = await metafieldsResponse.json();
+            console.log("Metafields response:", JSON.stringify(metafieldsData.data?.nodes, null, 2));
 
             // Ek mapping banayenge: Main Product ID -> Surcharge Variant ID (Metafield ki value)
             const productSurchargeMap: Record<string, string> = {};
@@ -97,6 +107,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
                     // Agar Missing hai (yani Cart me surcharge us product ka already nahi hai)
                     if (!existingVariantIds.has(numericSurchargeId)) {
+                        console.log(`Adding surcharge ${surchargeVariantValue} for product ${item.product_id}`);
                         needsUpdate = true; // Order ab backend me rewrite hoga
                         newLineItems.push({
                             variantId: surchargeVariantValue.includes("gid://")
@@ -116,7 +127,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             });
 
             // 4. Agar naya surcharge map hua hai, to ab GraphQL Mutation run kar k draft update karein
+            console.log("Needs update:", needsUpdate);
+            console.log("Product surcharge map:", productSurchargeMap);
             if (needsUpdate) {
+                console.log("Updating draft order with", newLineItems.length, "line items");
                 const updateQuery = `#graphql
            mutation draftOrderUpdate($id: ID!, $input: DraftOrderInput!) {
              draftOrderUpdate(id: $id, input: $input) {
@@ -126,12 +140,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
            }
          `;
 
-                await admin.graphql(updateQuery, {
+                const updateResponse = await admin.graphql(updateQuery, {
                     variables: {
                         id: draftOrder.admin_graphql_api_id,
                         input: { lineItems: newLineItems }
                     }
                 });
+                const updateResult = await updateResponse.json();
+                console.log("Update result:", JSON.stringify(updateResult, null, 2));
+            } else {
+                console.log("No update needed — surcharges already present or no matching products.");
             }
 
         } catch (err) {
