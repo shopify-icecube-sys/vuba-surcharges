@@ -2,7 +2,7 @@
 
 client_id = "2c13f5131d76e4c0bfbf1a34577be42b"
 name = "Vuba-Surcharges"
-application_url = "https://example.com"
+application_url = "https://vubacharge.icecubedev.com"
 embedded = true
 
 [build]
@@ -20,4 +20,4 @@ uri = "/webhooks"
 scopes = "write_products, write_cart_transforms, write_inventory, read_draft_orders, write_draft_orders, read_orders, write_orders"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://vubacharge.icecubedev.com/api/auth" ]
