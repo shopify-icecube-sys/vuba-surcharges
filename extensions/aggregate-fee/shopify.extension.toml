@@ -23,7 +23,3 @@ description = "t:description"
 [[extensions.metafield_access]]
 namespace = "vuba_surcharges"
 key = "fee_variant_id"
-
-[[extensions.metafield_access]]
-namespace = "custom"
-key = "surcharge_product_variant_id"

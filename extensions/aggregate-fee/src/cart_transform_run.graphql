@@ -13,9 +13,6 @@ query CartTransformRunInput {
         ... on ProductVariant {
           id
           title
-          metafield(namespace: "custom", key: "surcharge_product_variant_id") {
-            value
-          }
           product {
             handle
             inAnyCollection(ids: ["gid://shopify/Collection/446838440227"])
