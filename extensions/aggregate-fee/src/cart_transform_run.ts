@@ -11,11 +11,7 @@ const NO_CHANGES: CartTransformRunResult = {
 export function cartTransformRun(input: CartTransformRunInput): CartTransformRunResult {
   const FEE_PERCENTAGE = 0.052;
 
-  const feeVariantId = input.shop?.metafield?.value;
-
-  if (!feeVariantId) {
-    return { operations: [] };
-  }
+  const feeVariantId = input.shop?.metafield?.value || null;
 
   const operations: Operation[] = [];
 
@@ -29,7 +25,7 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
     const bundleSurchargeId = (merchandise as any).metafield?.value;
 
     // 🟢 EXISTING COLLECTION LOGIC (unchanged)
-    if (isCollectionProduct) {
+    if (isCollectionProduct && feeVariantId) {
       const unitPrice = parseFloat(line.cost.amountPerQuantity.amount);
       const feeAmount = (unitPrice * FEE_PERCENTAGE).toFixed(2);
 
