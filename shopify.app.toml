@@ -11,9 +11,13 @@ automatically_update_urls_on_dev = true
 [webhooks]
 api_version = "2026-07"
 
+[[webhooks.subscriptions]]
+topics = [ "draft_orders/create", "draft_orders/update" ]
+uri = "/webhooks"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products, write_cart_transforms, write_inventory"
+scopes = "write_products, write_cart_transforms, write_inventory, read_draft_orders, write_draft_orders, read_orders, write_orders"
 
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]
