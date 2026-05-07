@@ -66,7 +66,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       console.log("--- Starting Setup ---");
       const infoRes = await admin.graphql(`query getSetupInfo { feeProduct: products(first: 1, query: "handle:aggregate-surcharge") { nodes { id variants(first: 1) { nodes { id } } } } }`);
       const info = await infoRes.json();
-      
+
       let productId = info.data?.feeProduct?.nodes[0]?.id;
       let variantId = info.data?.feeProduct?.nodes[0]?.variants?.nodes[0]?.id;
 
@@ -97,7 +97,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         );
         const createJson: any = await createRes.json();
         console.log("Create Response JSON:", JSON.stringify(createJson));
-        
+
         if (createJson.errors) {
           console.error("GraphQL Errors detected:", JSON.stringify(createJson.errors));
           throw new Error("GraphQL Error: " + createJson.errors[0].message);
@@ -165,14 +165,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     } catch (err: any) {
       console.error("CRITICAL SETUP ERROR TYPE:", typeof err);
       console.error("CRITICAL SETUP ERROR MESSAGE:", err.message);
-      
+
       if (err.response?.errors) {
         console.error("Detailed GraphQL Errors (err.response.errors):", JSON.stringify(err.response.errors, null, 2));
       }
       if (err.graphQLErrors) {
         console.error("Detailed GraphQL Errors (err.graphQLErrors):", JSON.stringify(err.graphQLErrors, null, 2));
       }
-      
+
       return { success: false, error: err.message || "Unknown Error" };
     }
   }
@@ -233,11 +233,11 @@ export default function Index() {
             )}
             {targetProduct ? (
               <s-paragraph>
-                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227)</b>
+                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227, 703363776899)</b>
               </s-paragraph>
             ) : (
               <s-paragraph>
-                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227)</b>
+                Target Collection: <b style={{ color: "green" }}>Active (ID: 446838440227, 703363776899)</b>
               </s-paragraph>
             )}
             <s-paragraph>
@@ -263,7 +263,7 @@ export default function Index() {
 
       <s-section heading="How it works">
         <s-paragraph>
-          This app applies a <b>5.2% surcharge</b> to all products assigned to the collection <code>446838440227</code>.
+          This app applies a <b>5.2% surcharge</b> to all products assigned to the collection <code>446838440227, 703363776899</code>.
         </s-paragraph>
         <s-paragraph>
           1. The app manages a hidden <b>Aggregate Surcharge 5.2%</b> product.<br />
