@@ -102,27 +102,32 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
                 // (B) - Ab check karenge ki kya is product (e.g. Purple Rain) pe Metafield true tha?
                 if (item.product_id && productSurchargeMap[item.product_id.toString()]) {
-                    const surchargeVariantValue = productSurchargeMap[item.product_id.toString()];
-                    const numericSurchargeId = surchargeVariantValue.replace("gid://shopify/ProductVariant/", "");
+                    const surchargeValue = productSurchargeMap[item.product_id.toString()];
 
-                    // Agar Missing hai (yani Cart me surcharge us product ka already nahi hai)
-                    if (!existingVariantIds.has(numericSurchargeId)) {
-                        console.log(`Adding surcharge ${surchargeVariantValue} for product ${item.product_id}`);
-                        needsUpdate = true; // Order ab backend me rewrite hoga
-                        newLineItems.push({
-                            variantId: surchargeVariantValue.includes("gid://")
-                                ? surchargeVariantValue
-                                : `gid://shopify/ProductVariant/${surchargeVariantValue}`,
-                            quantity: item.quantity, // Bundle ka jo size hai utni hi surcharge quantity banegi
-                            customAttributes: [
-                                { key: "_surcharge_id", value: surchargeVariantValue },
-                                { key: "_added_by_vuba_webhook", value: "true" }
-                            ]
-                        });
+                    const surchargeIds = surchargeValue.split(',').map((id: string) => id.trim());
+                    surchargeIds.forEach((sId: string) => {
+                        const fullVariantId = sId.includes("gid://")
+                            ? sId
+                            : `gid://shopify/ProductVariant/${sId}`;
 
-                        // Dobara verify mark tak infinite addition se bachein
-                        existingVariantIds.add(numericSurchargeId);
-                    }
+                        const numericSurchargeId = sId.replace("gid://shopify/ProductVariant/", "");
+
+                        if (!existingVariantIds.has(numericSurchargeId)) {
+                            console.log(`Adding surcharge ${fullVariantId} for product ${item.product_id}`);
+                            needsUpdate = true;
+
+                            newLineItems.push({
+                                variantId: fullVariantId,
+                                quantity: item.quantity,
+                                customAttributes: [
+                                    { key: "_surcharge_id", value: fullVariantId },
+                                    { key: "_added_by_vuba_webhook", value: "true" }
+                                ]
+                            });
+
+                            existingVariantIds.add(numericSurchargeId);
+                        }
+                    });
                 }
             });
 
