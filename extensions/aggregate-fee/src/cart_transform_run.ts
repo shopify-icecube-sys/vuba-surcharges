@@ -34,7 +34,7 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
           expandedCartItems: [
             {
               merchandiseId: merchandise.id,
-              quantity: line.quantity, // FIX: Hardcoded 1 ki jagah line.quantity use karein
+              quantity: 1,
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
@@ -45,7 +45,7 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
             },
             {
               merchandiseId: feeVariantId,
-              quantity: line.quantity, // FIX: Hardcoded 1 ki jagah line.quantity use karein
+              quantity: 1,
               price: {
                 adjustment: {
                   fixedPricePerUnit: {
