@@ -120,8 +120,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                                 variantId: fullVariantId,
                                 quantity: item.quantity,
                                 customAttributes: [
-                                    { key: "_surcharge_id", value: fullVariantId },
-                                    { key: "_added_by_vuba_webhook", value: "true" }
+                                    { key: "_surcharge", value: "true" },
+                                    { key: "_kit_id", value: item.product_id.toString() }
                                 ]
                             });
 
