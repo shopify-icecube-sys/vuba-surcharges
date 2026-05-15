@@ -3,6 +3,9 @@ query CartTransformRunInput {
     lines {
       id
       quantity
+      attribute(key: "_added_by_vuba_webhook") {
+        value
+      }
       cost {
         amountPerQuantity {
           amount
