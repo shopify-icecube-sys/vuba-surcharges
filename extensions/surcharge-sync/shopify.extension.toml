@@ -1,0 +1,14 @@
+api_version = "2026-04"
+
+[[extensions]]
+name = "surcharge-sync"
+handle = "surcharge-sync"
+type = "ui_extension"
+uid = "6514842a-af54-3815-eecb-ba754468099e031d8b3d"
+
+[[extensions.targeting]]
+module = "./src/Checkout.jsx"
+target = "purchase.checkout.block.render"
+
+[extensions.capabilities]
+api_access = true
