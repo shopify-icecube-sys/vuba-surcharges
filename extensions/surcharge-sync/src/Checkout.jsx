@@ -1,6 +1,11 @@
-import '@shopify/ui-extensions/checkout';
+import '@shopify/ui-extensions/preact';
+import {render} from "preact";
 
 export default async () => {
+  render(<Extension />, document.body)
+};
+
+function Extension() {
   let isSyncing = false;
 
   shopify.lines.subscribe(async (lines) => {
@@ -60,4 +65,6 @@ export default async () => {
       setTimeout(() => { isSyncing = false; }, 500);
     }
   });
-};
+
+  return null;
+}
