@@ -1,4 +1,4 @@
-import '@shopify/ui-extensions/preact';
+import '@shopify/ui-extensions/checkout';
 
 export default async () => {
   let isSyncing = false;
