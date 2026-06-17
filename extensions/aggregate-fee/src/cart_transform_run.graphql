@@ -18,7 +18,7 @@ query CartTransformRunInput {
           title
           product {
             handle
-            inAnyCollection(ids: ["gid://shopify/Collection/446838440227", "gid://shopify/Collection/703363776899"])
+            inAnyCollection(ids: ["gid://shopify/Collection/446838440227", "gid://shopify/Collection/703363776899", "gid://shopify/Collection/706715386243"])
           }
         }
       }
