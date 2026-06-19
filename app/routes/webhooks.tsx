@@ -18,25 +18,38 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         try {
             const draftOrder = payload;
 
-            // 1. Draft Order ke saare products ki ek Unique gids list banana
+            // 1. Draft Order ke saare products aur variants ki ek Unique gids list banana
             const productIds = draftOrder.line_items
                 .filter((item: any) => item.product_id)
                 .map((item: any) => `gid://shopify/Product/${item.product_id}`);
 
-            // Agar sirf manual items hain aur koi product nahi hai to process rok denge
+            const variantIds = draftOrder.line_items
+                .filter((item: any) => item.variant_id)
+                .map((item: any) => `gid://shopify/ProductVariant/${item.variant_id}`);
+
+            // Agar sirf manual items hain aur koi product/variant nahi hai to process rok denge
             console.log("Product IDs found:", productIds);
-            if (productIds.length === 0) {
-                console.log("No product IDs found — skipping.");
+            console.log("Variant IDs found:", variantIds);
+            if (productIds.length === 0 && variantIds.length === 0) {
+                console.log("No product or variant IDs found — skipping.");
                 return new Response("OK", { status: 200 });
             }
 
-            // 2. GraphQL ke zariye eksath unsab products ke Surcharge Metafield nikalna
+            // 2. GraphQL ke zariye eksath unsab products aur variants ke Surcharge Metafield nikalna
             const getMetafieldsQuery = `#graphql
-        query getMetafields($ids: [ID!]!) {
-          nodes(ids: $ids) {
+        query getMetafields($productIds: [ID!]!, $variantIds: [ID!]!) {
+          products: nodes(ids: $productIds) {
             ... on Product {
               id
               surchargeVariant: metafield(namespace: "custom", key: "surcharge_variant") {
+                value
+              }
+            }
+          }
+          variants: nodes(ids: $variantIds) {
+            ... on ProductVariant {
+              id
+              surchargeVariant: metafield(namespace: "custom", key: "surcharge_product_variant_id") {
                 value
               }
             }
@@ -45,14 +58,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       `;
 
             const metafieldsResponse = await admin.graphql(getMetafieldsQuery, {
-                variables: { ids: [...new Set(productIds)] }
+                variables: { 
+                    productIds: [...new Set(productIds)],
+                    variantIds: [...new Set(variantIds)] 
+                }
             });
 
             const metafieldsData = await metafieldsResponse.json();
-            console.log("Metafields response:", JSON.stringify(metafieldsData.data?.nodes, null, 2));
+            console.log("Metafields response:", JSON.stringify(metafieldsData.data, null, 2));
 
-            // Ek mapping banayenge: Main Product ID -> Surcharge Variant ID (Metafield ki value)
+            // Ek mapping banayenge: Main Product/Variant ID -> Surcharge Variant ID (Metafield ki value)
             const productSurchargeMap: Record<string, string> = {};
+            const variantSurchargeMap: Record<string, string> = {};
 
             // Draft me pichle existing variants check karna taaki bar-bar add ya double entry na ho
             const existingVariantIds = new Set<string>();
@@ -62,12 +79,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 }
             });
 
-            if (metafieldsData.data?.nodes) {
-                metafieldsData.data.nodes.forEach((node: any) => {
+            if (metafieldsData.data?.products) {
+                metafieldsData.data.products.forEach((node: any) => {
                     // Agar product milta hai aur usme surcharge variant metafield bhi hai
                     if (node && node.surchargeVariant?.value) {
                         const rawId = node.id.split("/").pop();
                         productSurchargeMap[rawId] = node.surchargeVariant.value;
+                    }
+                });
+            }
+
+            if (metafieldsData.data?.variants) {
+                metafieldsData.data.variants.forEach((node: any) => {
+                    if (node && node.surchargeVariant?.value) {
+                        const rawId = node.id.split("/").pop();
+                        variantSurchargeMap[rawId] = node.surchargeVariant.value;
                     }
                 });
             }
@@ -100,12 +126,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
                 newLineItems.push(lineItemInput);
 
-                // (B) - Ab check karenge ki kya is product (e.g. Purple Rain) pe Metafield true tha?
-                if (item.product_id && productSurchargeMap[item.product_id.toString()]) {
-                    const surchargeValue = productSurchargeMap[item.product_id.toString()];
+                // (B) - Ab check karenge ki kya is product ya variant pe Metafield true tha?
+                let combinedSurchargeIds = new Set<string>();
 
-                    const surchargeIds = surchargeValue.split(',').map((id: string) => id.trim());
-                    surchargeIds.forEach((sId: string) => {
+                // 1. Agar Product par metafield hai, to IDs Set me dalein
+                if (item.product_id && productSurchargeMap[item.product_id.toString()]) {
+                    productSurchargeMap[item.product_id.toString()]
+                        .split(',')
+                        .forEach((id: string) => combinedSurchargeIds.add(id.trim()));
+                }
+
+                // 2. Agar Variant par metafield hai, to IDs Set me dalein
+                if (item.variant_id && variantSurchargeMap[item.variant_id.toString()]) {
+                    variantSurchargeMap[item.variant_id.toString()]
+                        .split(',')
+                        .forEach((id: string) => combinedSurchargeIds.add(id.trim()));
+                }
+
+                if (combinedSurchargeIds.size > 0) {
+                    combinedSurchargeIds.forEach((sId: string) => {
                         const fullVariantId = sId.includes("gid://")
                             ? sId
                             : `gid://shopify/ProductVariant/${sId}`;
@@ -113,7 +152,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                         const numericSurchargeId = sId.replace("gid://shopify/ProductVariant/", "");
 
                         if (!existingVariantIds.has(numericSurchargeId)) {
-                            console.log(`Adding surcharge ${fullVariantId} for product ${item.product_id}`);
+                            console.log(`Adding surcharge ${fullVariantId} for item ${item.title}`);
                             needsUpdate = true;
 
                             newLineItems.push({
@@ -134,6 +173,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             // 4. Agar naya surcharge map hua hai, to ab GraphQL Mutation run kar k draft update karein
             console.log("Needs update:", needsUpdate);
             console.log("Product surcharge map:", productSurchargeMap);
+            console.log("Variant surcharge map:", variantSurchargeMap);
+            
             if (needsUpdate) {
                 console.log("Updating draft order with", newLineItems.length, "line items");
                 const updateQuery = `#graphql
