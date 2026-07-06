@@ -9,7 +9,7 @@ const NO_CHANGES: CartTransformRunResult = {
 };
 
 export function cartTransformRun(input: CartTransformRunInput): CartTransformRunResult {
-  const FEE_PERCENTAGE = 0.052; // 5.2%
+  const FEE_PERCENTAGE = 0.042; // 4.2%
   const feeVariantId = input.shop?.metafield?.value;
   if (!feeVariantId) {
     return NO_CHANGES;
