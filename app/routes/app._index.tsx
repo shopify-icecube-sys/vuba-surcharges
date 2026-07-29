@@ -263,12 +263,12 @@ export default function Index() {
 
       <s-section heading="How it works">
         <s-paragraph>
-          This app applies a <b>4.2% surcharge</b> to all products assigned to the collection <code>446838440227, 703363776899</code>.
+          This app applies a <b>5.2% surcharge for Distributors and 4.2% for others</b> to all products assigned to the target collections.
         </s-paragraph>
         <s-paragraph>
-          1. The app manages a hidden <b>Aggregate Surcharge 4.2%</b> product.<br />
-          2. A Shopify Function (Cart Transform) monitors the cart for products from the target collection.<br />
-          3. It automatically expands those line items to include the surcharge for each item.
+          1. The app manages a hidden <b>Aggregate Surcharge</b> product.<br />
+          2. A Shopify Function (Cart Transform) monitors the cart and customer tags.<br />
+          3. It automatically expands those line items to include the correct surcharge for each item.
         </s-paragraph>
       </s-section>
 
